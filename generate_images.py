@@ -28,7 +28,7 @@ def load_payload(json_path):
         return json.load(f)
 
 def create_combined_market_image(state_1, state_2, output_path, post_date):
-    # एकाच इमेजमध्ये दोन राज्यांचे मिळून १० मार्केट बसवण्यासाठी योग्य उंची (2400px)
+    # एकाच इमेजमध्ये १० मार्केट (दोन राज्यांचे मिळून) बसवण्यासाठी अचूक रील्स साईझ (1080x2400)
     W, H = 1080, 2400
     img = Image.new('RGB', (W, H), color='#0c1017')
     draw = ImageDraw.Draw(img)
@@ -59,7 +59,7 @@ def create_combined_market_image(state_1, state_2, output_path, post_date):
         state_name = str(st_data.get('state', 'STATE')).upper()
         header_color = "#ea580c" if is_orange_header else "#0284c7"
         
-        # राज्याचे नाव (वरचे राज्य निळे, खालचे राज्य ऑरेंज/भगवे)
+        # वरच्या राज्यासाठी निळा बॉक्स, खालच्या राज्यासाठी भगवा/ऑरेंज बॉक्स
         draw.rounded_rectangle([40, y_offset, 1040, y_offset + 65], radius=12, fill=header_color)
         draw_centered_text(draw, (W/2, y_offset + 32), f"{state_name} - TOP 5 HIGH RATES", state_font, "#ffffff")
         
@@ -75,7 +75,7 @@ def create_combined_market_image(state_1, state_2, output_path, post_date):
             # मार्केटची रो (Row)
             draw.rounded_rectangle([40, row_y, 1040, row_y + 85], radius=8, fill="#17202e")
             
-            # नंबरचा गोल (पहिल्या राज्यासाठी निळा, दुसऱ्यासाठी पिवळा/ऑरेंज)
+            # नंबरचा गोल (पहिल्यासाठी निळा, दुसऱ्यासाठी पिवळा/ऑरेंज)
             circle_color = "#f59e0b" if is_orange_header else "#0ea5e9"
             draw.ellipse([60, row_y + 17, 115, row_y + 72], fill=circle_color)
             draw_centered_text(draw, (87, row_y + 44), str(idx + 1), num_font, "#ffffff")
@@ -106,7 +106,7 @@ def create_combined_market_image(state_1, state_2, output_path, post_date):
         current_y = draw_state_section(state_2, current_y, is_orange_header=True)
         current_y += 20
 
-    # ४. तळाची ॲड (Ad Box - हुबेहूब तुमच्या नमुन्यासारखी)
+    # ४. तळाची ॲड (शुद्ध हिंदी मधील ॲड बॉक्स)
     ad_y = current_y
     draw.rounded_rectangle([40, ad_y, 1040, ad_y + 340], radius=15, outline="#fbbf24", width=3)
     
@@ -120,9 +120,8 @@ def create_combined_market_image(state_1, state_2, output_path, post_date):
     draw.rounded_rectangle([300, ad_y + 125, 780, ad_y + 200], radius=12, fill="#1877f2")
     draw_centered_text(draw, (W/2, ad_y + 162), "Facebook", fb_btn_font, "#ffffff")
     
-    # Green Logo Box & Page name (जसे तुमच्या इमेजमध्ये आहे)
+    # Green Box & Page name
     draw.rectangle([210, ad_y + 225, 270, ad_y + 285], fill="#22c55e")
-    # छोटा लोगो 'G' किंवा खूण दाखवण्यासाठी किंवा थेट मजकूर
     draw.text((295, ad_y + 230), "Facebook Page : GREEN SOURCE", font=market_font, fill="#4ade80")
     draw.text((295, ad_y + 268), "Link in description / Bio me di gayi hai", font=district_font, fill="#94a3b8")
 
@@ -142,34 +141,43 @@ def main():
     data = payload.get('client_payload', payload)
     post_date = str(data.get('date', ''))
     
-    states_data = data.get('market_data', [])
-    if not isinstance(states_data, list):
-        states_data = [states_data]
+    raw_market_data = data.get('market_data', [])
+    
+    # डेटाचा फॉरमॅट कसाही आला तरी तो एका लिस्टमध्ये रूपांतरित करणे
+    states_data = []
+    if isinstance(raw_market_data, list):
+        states_data = raw_market_data
+    elif isinstance(raw_market_data, dict):
+        states_data = [raw_market_data]
         
-    # दोन-दोन राज्यांची जोडी करून एकाच इमेजवर १० मार्केट पाठवणे
+    # जर n8n कडून डेटा सुटा (Single Item) आला तर तो युनिफाय करणे
+    if len(states_data) == 1 and "market_data" in states_data[0]:
+        states_data = states_data[0]["market_data"]
+
+    # दोन-दोन राज्यांची जोडी करून एकाच इमेजवर १० मार्केट तयार करणे
     if len(states_data) >= 2:
         for i in range(0, len(states_data) - 1, 2):
             st1 = states_data[i]
             st2 = states_data[i+1]
             
-            name1 = st1.get('state', 'market1').lower().replace(' ', '_')
-            name2 = st2.get('state', 'market2').lower().replace(' ', '_')
+            name1 = str(st1.get('state', 'market1')).lower().replace(' ', '_')
+            name2 = str(st2.get('state', 'market2')).lower().replace(' ', '_')
             
             output_filename = f"generated_images/onion_rates_{name1}_and_{name2}.png"
             create_combined_market_image(st1, st2, output_filename, post_date)
             
-        # समजा राज्यांची संख्या विषम (Odd) असेल आणि शेवटचे एक राज्य उरले तर
+        # विषम (Odd) संख्या असल्यास शेवटचे राज्य स्वतंत्र इमेजमध्ये
         if len(states_data) % 2 != 0:
             st1 = states_data[-1]
-            name1 = st1.get('state', 'market1').lower().replace(' ', '_')
-            output_filename = f"generated_images/onion_rates_{name1}_final.png"
+            name1 = str(st1.get('state', 'market1')).lower().replace(' ', '_')
+            output_filename = f"generated_images/onion_rates_{name1}_single.png"
             create_combined_market_image(st1, {}, output_filename, post_date)
             
     elif len(states_data) == 1:
         st1 = states_data[0]
-        name1 = st1.get('state', 'market1').lower().replace(' ', '_')
+        name1 = str(st1.get('state', 'market1')).lower().replace(' ', '_')
         output_filename = f"generated_images/onion_rates_{name1}.png"
         create_combined_market_image(st1, {}, output_filename, post_date)
 
-if __name__ == 'main__':
+if __name__ == '__main__':
     main()
