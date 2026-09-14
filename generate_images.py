@@ -28,106 +28,107 @@ def load_payload(json_path):
         return json.load(f)
 
 def create_combined_market_image(state_1, state_2, output_path, post_date):
-    # एकाच इमेजमध्ये दोन राज्य बसवण्यासाठी उंची (Height) वाढवली आहे
+    # एकाच इमेजमध्ये दोन राज्यांचे मिळून १० मार्केट बसवण्यासाठी योग्य उंची (2400px)
     W, H = 1080, 2400
     img = Image.new('RGB', (W, H), color='#0c1017')
     draw = ImageDraw.Draw(img)
     
     try:
-        title_font = ImageFont.truetype("Roboto-Bold.ttf", 55)
-        date_font = ImageFont.truetype("Roboto-Bold.ttf", 35)
-        state_font = ImageFont.truetype("Roboto-Bold.ttf", 40)
-        col_font = ImageFont.truetype("Roboto-Regular.ttf", 25)
-        num_font = ImageFont.truetype("Roboto-Bold.ttf", 35)
-        market_font = ImageFont.truetype("Roboto-Bold.ttf", 32)
-        district_font = ImageFont.truetype("Roboto-Regular.ttf", 26)
-        price_font = ImageFont.truetype("Roboto-Bold.ttf", 40)
-        hindi_font = ImageFont.truetype("NotoSansDevanagari-Bold.ttf", 32)
-        fb_btn_font = ImageFont.truetype("Roboto-Bold.ttf", 42)
+        title_font = ImageFont.truetype("Roboto-Bold.ttf", 52)
+        date_font = ImageFont.truetype("Roboto-Bold.ttf", 32)
+        state_font = ImageFont.truetype("Roboto-Bold.ttf", 38)
+        col_font = ImageFont.truetype("Roboto-Regular.ttf", 24)
+        num_font = ImageFont.truetype("Roboto-Bold.ttf", 32)
+        market_font = ImageFont.truetype("Roboto-Bold.ttf", 30)
+        district_font = ImageFont.truetype("Roboto-Regular.ttf", 24)
+        price_font = ImageFont.truetype("Roboto-Bold.ttf", 38)
+        hindi_font = ImageFont.truetype("NotoSansDevanagari-Bold.ttf", 30)
+        fb_btn_font = ImageFont.truetype("Roboto-Bold.ttf", 40)
     except:
         title_font = date_font = state_font = col_font = num_font = market_font = district_font = price_font = hindi_font = fb_btn_font = ImageFont.load_default()
 
-    # 1. मुख्य टॉप हेडर्स (लाल बॉक्स)
-    draw.rounded_rectangle([40, 40, 1040, 160], radius=15, fill="#b91c1c")
-    draw_centered_text(draw, (W/2, 80), "DAILY ONION MANDI RATES", title_font, "#ffffff")
-    draw_centered_text(draw, (W/2, 130), f"DATE: {post_date} | TOP 5 MAXIMUM RATES", date_font, "#fca5a5")
+    # 1. मुख्य टॉप हेडर (लाल बॉक्स)
+    draw.rounded_rectangle([40, 30, 1040, 145], radius=15, fill="#b91c1c")
+    draw_centered_text(draw, (W/2, 70), "DAILY ONION MANDI RATES", title_font, "#ffffff")
+    draw_centered_text(draw, (W/2, 115), f"DATE: {post_date} | TOP 5 MAXIMUM RATES", date_font, "#fca5a5")
     
-    current_y = 190
+    current_y = 175
 
-    # फंक्शन: एका राज्याचा डेटा टेबल फॉरमॅटमध्ये टाकण्यासाठी
+    # एका राज्यासाठी ५ मार्केटचा टेबल तयार करण्याचे फंक्शन
     def draw_state_section(st_data, y_offset, is_orange_header=False):
         state_name = str(st_data.get('state', 'STATE')).upper()
         header_color = "#ea580c" if is_orange_header else "#0284c7"
         
-        # स्टेटचे नाव (निळा किंवा भगवा बॉक्स)
-        draw.rounded_rectangle([40, y_offset, 1040, y_offset + 70], radius=12, fill=header_color)
-        draw_centered_text(draw, (W/2, y_offset + 35), f"{state_name} - TOP 5 HIGH RATES", state_font, "#ffffff")
+        # राज्याचे नाव (वरचे राज्य निळे, खालचे राज्य ऑरेंज/भगवे)
+        draw.rounded_rectangle([40, y_offset, 1040, y_offset + 65], radius=12, fill=header_color)
+        draw_centered_text(draw, (W/2, y_offset + 32), f"{state_name} - TOP 5 HIGH RATES", state_font, "#ffffff")
         
         # कॉलम हेडिंग्स
-        draw.text((60, y_offset + 85), "#", font=col_font, fill="#fbbf24")
-        draw.text((120, y_offset + 85), "DISTRICT & MARKET / MANDI", font=col_font, fill="#94a3b8")
-        draw.text((850, y_offset + 85), "MAX RATE", font=col_font, fill="#0284c7")
+        draw.text((60, y_offset + 75), "#", font=col_font, fill="#fbbf24")
+        draw.text((120, y_offset + 75), "DISTRICT & MARKET / MANDI", font=col_font, fill="#94a3b8")
+        draw.text((850, y_offset + 75), "MAX RATE", font=col_font, fill="#0284c7")
         
-        row_y = y_offset + 125
+        row_y = y_offset + 110
         markets = st_data.get('topMarkets', [])
         
         for idx, market in enumerate(markets[:5]):
-            # प्रत्येक मार्केटची रो (Row)
-            draw.rounded_rectangle([40, row_y, 1040, row_y + 95], radius=8, fill="#17202e")
+            # मार्केटची रो (Row)
+            draw.rounded_rectangle([40, row_y, 1040, row_y + 85], radius=8, fill="#17202e")
             
-            # नंबरचा गोल (पिवळा किंवा निळा)
+            # नंबरचा गोल (पहिल्या राज्यासाठी निळा, दुसऱ्यासाठी पिवळा/ऑरेंज)
             circle_color = "#f59e0b" if is_orange_header else "#0ea5e9"
-            draw.ellipse([60, row_y + 20, 120, row_y + 80], fill=circle_color)
-            draw_centered_text(draw, (90, row_y + 50), str(idx + 1), num_font, "#ffffff")
+            draw.ellipse([60, row_y + 17, 115, row_y + 72], fill=circle_color)
+            draw_centered_text(draw, (87, row_y + 44), str(idx + 1), num_font, "#ffffff")
             
             market_name = str(market.get('Market', ''))
             district = str(market.get('District', ''))
             max_price = str(market.get('MaxPrice', ''))
             
-            draw.text((150, row_y + 20), market_name, font=market_font, fill="#ffffff")
-            draw.text((150, row_y + 58), f"District: {district}", font=district_font, fill="#94a3b8")
+            draw.text((145, row_y + 16), market_name, font=market_font, fill="#ffffff")
+            draw.text((145, row_y + 50), f"District: {district}", font=district_font, fill="#94a3b8")
             
             price_str = f"Rs. {max_price} /Qtl"
             bbox = draw.textbbox((0, 0), price_str, font=price_font)
             price_w = bbox[2] - bbox[0]
-            draw.text((1000 - price_w, row_y + 28), price_str, font=price_font, fill="#4ade80")
+            draw.text((1000 - price_w, row_y + 22), price_str, font=price_font, fill="#4ade80")
             
-            row_y += 105
+            row_y += 95
             
         return row_y
 
-    # पहिले राज्य प्रिंट करा (निळा बॉक्स)
-    if len(state_1) > 0:
+    # २. पहिले राज्य (Top 5 Markets) प्रिंट करा
+    if state_1 and len(state_1.get('topMarkets', [])) > 0:
         current_y = draw_state_section(state_1, current_y, is_orange_header=False)
-        current_y += 20 # दोन राज्यांमधील अंतर
+        current_y += 15
 
-    # दुसरे राज्य प्रिंट करा (भगवा/ऑरेंज बॉक्स - हुबेहूब तुमच्या दुसऱ्या फोटोसारखा)
-    if len(state_2) > 0:
+    # ३. दुसरे राज्य (Top 5 Markets) त्याच्या बरोबर खाली प्रिंट करा
+    if state_2 and len(state_2.get('topMarkets', [])) > 0:
         current_y = draw_state_section(state_2, current_y, is_orange_header=True)
-        current_y += 30
+        current_y += 20
 
-    # तळाची हिंदी ॲड (Ad Box)
+    # ४. तळाची ॲड (Ad Box - हुबेहूब तुमच्या नमुन्यासारखी)
     ad_y = current_y
-    draw.rounded_rectangle([40, ad_y, 1040, ad_y + 380], radius=15, outline="#fbbf24", width=3)
+    draw.rounded_rectangle([40, ad_y, 1040, ad_y + 340], radius=15, outline="#fbbf24", width=3)
     
-    hindi_text_1 = "क्या आप प्याज व्यापारी या किसान हैं और बाजार भाव जानना चाहते हैं?"
-    hindi_text_2 = "आज ही हमारा फेसबुक पेज लाइक करें और पाएं ताजा भाव!"
+    hindi_text_1 = "क्या आप सभी राज्यों के पूरे भाव देखना चाहते हैं?"
+    hindi_text_2 = "देश की सभी मंडियों के दैनिक रेट्स के लिए पेज को फॉलो करें!"
     
-    draw_centered_text(draw, (W/2, ad_y + 50), hindi_text_1, hindi_font, "#fbbf24")
-    draw_centered_text(draw, (W/2, ad_y + 95), hindi_text_2, hindi_font, "#ffffff")
+    draw_centered_text(draw, (W/2, ad_y + 45), hindi_text_1, hindi_font, "#fbbf24")
+    draw_centered_text(draw, (W/2, ad_y + 85), hindi_text_2, hindi_font, "#ffffff")
     
     # Facebook Button
-    draw.rounded_rectangle([300, ad_y + 140, 780, ad_y + 220], radius=12, fill="#1877f2")
-    draw_centered_text(draw, (W/2, ad_y + 180), "Facebook", fb_btn_font, "#ffffff")
+    draw.rounded_rectangle([300, ad_y + 125, 780, ad_y + 200], radius=12, fill="#1877f2")
+    draw_centered_text(draw, (W/2, ad_y + 162), "Facebook", fb_btn_font, "#ffffff")
     
-    # Green Box & Page name
-    draw.rectangle([250, ad_y + 250, 305, ad_y + 305], fill="#22c55e")
-    draw.text((330, ad_y + 252), "Facebook Page : GREEN SOURCE", font=market_font, fill="#4ade80")
-    draw.text((330, ad_y + 292), "Link in description / Bio me di gayi hai", font=district_font, fill="#94a3b8")
+    # Green Logo Box & Page name (जसे तुमच्या इमेजमध्ये आहे)
+    draw.rectangle([210, ad_y + 225, 270, ad_y + 285], fill="#22c55e")
+    # छोटा लोगो 'G' किंवा खूण दाखवण्यासाठी किंवा थेट मजकूर
+    draw.text((295, ad_y + 230), "Facebook Page : GREEN SOURCE", font=market_font, fill="#4ade80")
+    draw.text((295, ad_y + 268), "Link in description / Bio me di gayi hai", font=district_font, fill="#94a3b8")
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     img.save(output_path)
-    print(f"Combined image saved successfully: {output_path}")
+    print(f"Combined 10-market image saved successfully: {output_path}")
 
 def main():
     if len(sys.argv) < 2:
@@ -145,7 +146,7 @@ def main():
     if not isinstance(states_data, list):
         states_data = [states_data]
         
-    # जर डेटा एकापेक्षा जास्त राज्यांचा असेल, तर त्यांना जोड्यांमध्ये (२-२ च्या जोड्या) एकाच इमेजमध्ये टाका
+    # दोन-दोन राज्यांची जोडी करून एकाच इमेजवर १० मार्केट पाठवणे
     if len(states_data) >= 2:
         for i in range(0, len(states_data) - 1, 2):
             st1 = states_data[i]
@@ -156,12 +157,19 @@ def main():
             
             output_filename = f"generated_images/onion_rates_{name1}_and_{name2}.png"
             create_combined_market_image(st1, st2, output_filename, post_date)
+            
+        # समजा राज्यांची संख्या विषम (Odd) असेल आणि शेवटचे एक राज्य उरले तर
+        if len(states_data) % 2 != 0:
+            st1 = states_data[-1]
+            name1 = st1.get('state', 'market1').lower().replace(' ', '_')
+            output_filename = f"generated_images/onion_rates_{name1}_final.png"
+            create_combined_market_image(st1, {}, output_filename, post_date)
+            
     elif len(states_data) == 1:
-        # समजा एखाद्या वेळी एकच राज्य असेल तर
         st1 = states_data[0]
         name1 = st1.get('state', 'market1').lower().replace(' ', '_')
         output_filename = f"generated_images/onion_rates_{name1}.png"
         create_combined_market_image(st1, {}, output_filename, post_date)
 
-if __name__ == '__main__':
+if __name__ == 'main__':
     main()
