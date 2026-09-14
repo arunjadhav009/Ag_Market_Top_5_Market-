@@ -1,96 +1,93 @@
-import os
 import sys
 import json
+import os
 from PIL import Image, ImageDraw, ImageFont
 
+def load_payload(json_path):
+    with open(json_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    return data
+
 def create_market_image(state_data, output_path):
-    # इमेजचा आकार (तुमच्या डिझाईननुसार 800x1200 पिक्सेल)
-    width = 800
-    height = 1200
-    bg_color = "#0c1017" # गडद काळा-निळा रंग
-    
-    img = Image.new("RGB", (width, height), color=bg_color)
+    # Create base image (Instagram portrait size: 1080x1350)
+    img = Image.new('RGB', (1080, 1350), color='#f8f9fa')
     draw = ImageDraw.Draw(img)
     
-    # फॉन्ट लोड करणे (सिस्टम फॉन्ट किंवा डिफॉल्ट वापरणे)
+    # Header Background
+    draw.rounded_rectangle([40, 40, 1040, 180], radius=20, fill="#1b4332")
+    
     try:
-        font_title = ImageFont.truetype("DejaVuSans-Bold.ttf", 28)
-        font_sub = ImageFont.truetype("DejaVuSans-Bold.ttf", 18)
-        font_row = ImageFont.truetype("DejaVuSans.ttf", 16)
-        font_bold = ImageFont.truetype("DejaVuSans-Bold.ttf", 16)
+        title_font = ImageFont.truetype("usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 42)
+        sub_font = ImageFont.truetype("usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 28)
+        table_font = ImageFont.truetype("usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 24)
+        bold_table_font = ImageFont.truetype("usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
     except:
-        font_title = font_sub = font_row = font_bold = ImageFont.load_default()
+        title_font = ImageFont.load_default()
+        sub_font = ImageFont.load_default()
+        table_font = ImageFont.load_default()
+        bold_table_font = ImageFont.load_default()
 
-    # १. वरचा मेन बॅनर (DAILY ONION MANDI RATES)
-    draw.rectangle([30, 30, 770, 110], fill="#b92b27", radius=10)
-    draw.text((width/2, 50), "DAILY ONION MANDI RATES", fill="white", font=font_title, anchor="mm")
+    # Titles
+    draw.text((70, 70), f"कांदा बाजारभाव - {state_data.get('state', 'State')}", fill="#ffffff", font=title_font)
+    draw.text((70, 125), f"दिनांक: {state_data.get('postDate', '')}", fill="#d8f3dc", font=sub_font)
     
-    post_date = state_data.get("postDate", "13/09/2026")
-    draw.text((width/2, 85), f"DATE: {post_date}  |  TOP 5 MAXIMUM RATES", fill="#ffdddd", font=font_sub, anchor="mm")
-
-    # २. राज्याचा बॅनर (उदा. TAMIL NADU - TOP 5 HIGH RATES)
-    state_name = state_data.get("state", "STATE NAME").upper()
-    draw.rectangle([30, 130, 770, 190], fill="#1e88e5", radius=8)
-    draw.text((width/2, 160), f"{state_name} - TOP 5 HIGH RATES", fill="white", font=font_title, anchor="mm")
-
-    # ३. टेबल हेडर्स
-    draw.text((50, 215), "#", fill="#00e5ff", font=font_bold)
-    draw.text((100, 215), "DISTRICT & MARKET / MANDI", fill="#00e5ff", font=font_bold)
-    draw.text((650, 215), "MAX RATE", fill="#00e5ff", font=font_bold)
-    draw.line([30, 240, 770, 240], fill="#1f2937", width=2)
-
-    # ४. ५ मार्केट डेटा रो (Rows)
-    markets = state_data.get("topMarkets", [])
-    y_start = 260
+    # Table Header Background
+    draw.rounded_rectangle([40, 220, 1040, 300], radius=10, fill="#2d6a4f")
     
-    for idx, market in enumerate(markets[:5]):
-        # प्रत्येक रो साठी बॅकग्राऊंड बॉक्स
-        draw.rectangle([30, y_start, 770, y_start + 85], fill="#131b2e", outline="#1f2937", width=1)
-        
-        # अनुक्रमांक वर्तुळ (Circle for number)
-        draw.ellipse([50, y_start + 22, 90, y_start + 62], fill="#00bcd4")
-        draw.text((70, y_start + 42), str(idx + 1), fill="#0c1017", font=font_bold, anchor="mm")
-        
-        # जिल्हा आणि मार्केट नाव
-        district = market.get("District", "-")
-        market_name = market.get("Market", "-")
-        draw.text((110, y_start + 25), f"{market_name}", fill="white", font=font_bold)
-        draw.text((110, y_start + 52), f"District: {district}", fill="#9ca3af", font=font_sub)
-        
-        # मॅक्स प्राईज
-        max_price = market.get("MaxPrice", 0)
-        draw.text((750, y_start + 42), f"Rs. {max_price} /Qtl", fill="#00e676", font=font_bold, anchor="rt")
-        
-        y_start += 95
+    draw.text((70, 245), "जिल्हा (District)", fill="#ffffff", font=bold_table_font)
+    draw.text((380, 245), "बाजार समिती (Market)", fill="#ffffff", font=bold_table_font)
+    draw.text((720, 245), "कमीत कमी", fill="#ffffff", font=bold_table_font)
+    draw.text((890, 245), "जास्तीत जास्त", fill="#ffffff", font=bold_table_font)
 
-    # ५. फुटर (Facebook Page / Branding)
-    footer_y = 1040
-    draw.rectangle([30, footer_y, 770, 1170], fill="#131b2e", outline="#f57c00", width=2)
-    draw.text((width/2, footer_y + 30), "क्या आप सभी राज्यों के पूरे भाव देखना चाहते हैं?", fill="white", font=font_bold, anchor="mm")
-    draw.text((width/2, footer_y + 55), "देश की सभी मंडियों के दैनिक रेट्स के लिए पेज को फॉलो करें!", fill="#9ca3af", font=font_row, anchor="mm")
+    # Rows Data
+    start_y = 330
+    row_height = 80
     
-    # Facebook बटण
-    draw.rectangle([200, footer_y + 75, 600, footer_y + 120], fill="#1877f2", radius=6)
-    draw.text((width/2, footer_y + 97), "Facebook", fill="white", font=font_title, anchor="mm")
+    markets = state_data.get('topMarkets', [])
+    for idx, market in enumerate(markets[:10]):  # Max top 10 rows
+        y_pos = start_y + (idx * row_height)
+        
+        # Alternating row background
+        bg_color = "#ffffff" if idx % 2 == 0 else "#e9f5ed"
+        draw.rounded_rectangle([40, y_pos, 1040, y_pos + 70], radius=8, fill=bg_color)
+        
+        district = str(market.get('District', ''))
+        market_name = str(market.get('Market', ''))
+        min_price = str(market.get('MinPrice', ''))
+        max_price = str(market.get('MaxPrice', ''))
+        
+        draw.text((70, y_pos + 20), district, fill="#212529", font=table_font)
+        draw.text((380, y_pos + 20), market_name, fill="#212529", font=table_font)
+        draw.text((720, y_pos + 20), f"Rs. {min_price}", fill="#2b9348", font=bold_table_font)
+        draw.text((890, y_pos + 20), f"Rs. {max_price}", fill="#d90429", font=bold_table_font)
+
+    # Footer
+    draw.text((70, 1270), "Powered by Automated n8n & GitHub Workflow", fill="#6c757d", font=sub_font)
     
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     img.save(output_path)
-    print(f"Image generated successfully: {output_path}")
+    print(f"Image saved successfully: {output_path}")
 
-if __name__ == "__main__":
-    # n8n द्वारे पाठवलेला पेलोड वाचणे
-    payload_file = sys.argv[1] if len(sys.argv) > 1 else "payload.json"
-    if os.path.exists(payload_file):
-        with open(payload_file, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            
-        os.makedirs("generated_images", exist_ok=True)
-        states = data.get("market_data", [])
-        if isinstance(states, dict):
-            states = [states]
-            
-        for state in states:
-            state_name = state.get("state", "unknown").lower().replace(" ", "_")
-            out_path = f"generated_images/{state_name}_rates.png"
-            create_market_image(state, out_path)
-    else:
-        print("Payload file not found!")
+def main():
+    if len(sys.argv) < 2:
+        print("Error: Payload JSON file path required.")
+        sys.exit(1)
+        
+    json_file = sys.argv[1]
+    payload = load_payload(json_file)
+    
+    # Handle direct payload or workflow dispatch payload structure
+    data = payload.get('client_payload', payload)
+    
+    # If data has states array or single state object
+    states_data = data.get('market_data', [data])
+    if not isinstance(states_data, list):
+        states_data = [states_data]
+        
+    for state_item in states_data:
+        state_name = state_item.get('state', 'market').lower().replace(' ', '_')
+        output_filename = f"generated_images/onion_rates_{state_name}.png"
+        create_market_image(state_item, output_filename)
+
+if __name__ == '__main__':
+    main()
